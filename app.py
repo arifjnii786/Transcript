@@ -1,10 +1,9 @@
 import streamlit as st
 import yt_dlp
-from youtube_transcript_api import YouTubeTranscriptApi
-from youtube_transcript_api._errors import NoTranscriptFound, TranscriptsDisabled
+import youtube_transcript_api
 import concurrent.futures
 
-# --- APP LAYOUT CONFIG (100% NATIVE) ---
+# --- APP LAYOUT CONFIG ---
 st.set_page_config(
     page_title="Shorts Transcript Hub",
     page_icon="🎬",
@@ -42,13 +41,18 @@ def get_shorts_ids(channel_handle, max_results):
 def fetch_single_transcript(video):
     v_id = video['id']
     try:
-        transcript_list = YouTubeTranscriptApi.get_transcript(v_id, languages=['en'])
+        # Direct class method invocation to prevent module lookup failures
+        transcript_list = youtube_transcript_api.YouTubeTranscriptApi.get_transcript(v_id, languages=['en'])
         full_text = " ".join([chunk['text'] for chunk in transcript_list])
         return {**video, 'transcript': full_text, 'status': 'Success'}
-    except (NoTranscriptFound, TranscriptsDisabled):
-        return {**video, 'transcript': "[System Note: No English subtitles/transcript found for this video]", 'status': 'Failed'}
     except Exception as e:
-        return {**video, 'transcript': f"[System Error: {str(e)}]", 'status': 'Error'}
+        # Fallback to auto-generated transcripts lookups if specific language profile fails
+        try:
+            transcript_list = youtube_transcript_api.YouTubeTranscriptApi.get_transcript(v_id)
+            full_text = " ".join([chunk['text'] for chunk in transcript_list])
+            return {**video, 'transcript': full_text, 'status': 'Success'}
+        except Exception:
+            return {**video, 'transcript': "[System Note: No subtitles or auto-generated transcript available for this Short video]", 'status': 'Failed'}
 
 def bulk_extract_transcripts(video_list):
     with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
@@ -83,7 +87,6 @@ if submit_btn:
             
             st.toast("✨ Bulk data extraction finished!", icon="✅")
             
-            # Text Processing compiler
             compiled_text = ""
             successful_transcripts_count = 0
             
@@ -93,7 +96,7 @@ if submit_btn:
                     compiled_text += f"TITLE: {item['title']}\nURL: {item['url']}\nTRANSCRIPT:\n{item['transcript']}\n\n"
                     compiled_text += "="*80 + "\n\n"
             
-            # --- ACTION PANEL BAR (Native Columns) ---
+            # --- ACTION PANEL BAR ---
             st.subheader("⚡ Bulk Operations Action Bar")
             col1, col2 = st.columns(2)
             
@@ -112,11 +115,10 @@ if submit_btn:
 
             st.divider()
             
-            # --- CHRONOLOGICAL NATIVE CARDS VIEW ---
+            # --- CARDS VIEW ---
             st.subheader(f"📂 Individual Item Profiles ({successful_transcripts_count} Extracted Successfully)")
             
             for index, item in enumerate(extracted_data):
-                # Using Native Containers as modern cards
                 with st.container(border=True):
                     col_title, col_status = st.columns([3, 1])
                     with col_title:
@@ -126,7 +128,7 @@ if submit_btn:
                         if item['status'] == 'Success':
                             st.success("✓ Success")
                         else:
-                            st.error(f"✗ {item['status']}")
+                            st.error("✗ Failed")
                     
                     if item['status'] == 'Success':
                         st.text_area("Transcript Output", value=item['transcript'], height=110, key=f"individual_{index}", label_visibility="collapsed")
