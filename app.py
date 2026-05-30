@@ -4,55 +4,13 @@ from youtube_transcript_api import YouTubeTranscriptApi
 from youtube_transcript_api._errors import NoTranscriptFound, TranscriptsDisabled
 import concurrent.futures
 
-# --- APP LAYOUT CONFIG ---
+# --- APP LAYOUT CONFIG (100% NATIVE) ---
 st.set_page_config(
     page_title="Shorts Transcript Hub",
     page_icon="🎬",
     layout="wide",
     initial_sidebar_state="expanded"
 )
-
-# Cleaned UI styling wrapper to avoid python version parsing syntax conflicts
-app_css = """
-<style>
-.main .block-container { padding-top: 2rem; padding-bottom: 2rem; }
-h1 { font-weight: 800; color: #1E293B; letter-spacing: -0.5px; }
-.video-card {
-    background-color: #FFFFFF;
-    border: 1px solid #E2E8F0;
-    border-radius: 12px;
-    padding: 20px;
-    margin-bottom: 20px;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-}
-.video-title {
-    font-size: 16px;
-    font-weight: 600;
-    color: #0F172A;
-    margin-bottom: 8px;
-}
-.badge-success {
-    background-color: #DCFCE7;
-    color: #14532D;
-    padding: 3px 10px;
-    border-radius: 20px;
-    font-size: 12px;
-    font-weight: 600;
-    display: inline-block;
-}
-.badge-failed {
-    background-color: #FEE2E2;
-    color: #7F1D1D;
-    padding: 3px 10px;
-    border-radius: 20px;
-    font-size: 12px;
-    font-weight: 600;
-    display: inline-block;
-}
-</style>
-"""
-st.markdown(app_css, unsafe_html=True)
-
 
 # --- DATA EXTRACTION BACKEND ---
 def get_shorts_ids(channel_handle, max_results):
@@ -100,17 +58,15 @@ def bulk_extract_transcripts(video_list):
 
 # --- SIDEBAR INTERFACE ---
 with st.sidebar:
-    st.markdown("<h2 style='color:#0F172A; font-weight:700; margin-bottom:20px;'>🔧 Source Engine</h2>", unsafe_html=True)
+    st.title("🔧 Source Engine")
     handle = st.text_input("Channel Handle", placeholder="@username")
     count = st.slider("Videos Target Count", min_value=1, max_value=30, value=5)
-    
-    st.markdown("<div style='margin-top:25px;'></div>", unsafe_html=True)
     submit_btn = st.button("⚡ Extract Transcripts", use_container_width=True, type="primary")
 
 
 # --- MAIN SCREEN INTERFACE ---
-st.markdown("<h1>🎬 YouTube Shorts Transcript Hub</h1>", unsafe_html=True)
-st.markdown("<p style='color:#64748B; font-size:15px; margin-bottom:30px;'>Bulk extraction utility built for fast workflow optimization.</p>", unsafe_html=True)
+st.title("🎬 YouTube Shorts Transcript Hub")
+st.caption("Bulk extraction utility built for fast workflow optimization.")
 
 if submit_btn:
     if not handle.strip():
@@ -127,6 +83,7 @@ if submit_btn:
             
             st.toast("✨ Bulk data extraction finished!", icon="✅")
             
+            # Text Processing compiler
             compiled_text = ""
             successful_transcripts_count = 0
             
@@ -136,37 +93,44 @@ if submit_btn:
                     compiled_text += f"TITLE: {item['title']}\nURL: {item['url']}\nTRANSCRIPT:\n{item['transcript']}\n\n"
                     compiled_text += "="*80 + "\n\n"
             
-            st.markdown("### ⚡ Bulk Operations Action Bar")
+            # --- ACTION PANEL BAR (Native Columns) ---
+            st.subheader("⚡ Bulk Operations Action Bar")
+            col1, col2 = st.columns(2)
             
-            st.download_button(
-                label="📥 Download ALL Transcripts (Single Text File)",
-                data=compiled_text,
-                file_name=f"{handle.replace('@','')}_all_transcripts.txt",
-                mime="text/plain",
-                use_container_width=True,
-            )
+            with col1:
+                st.download_button(
+                    label="📥 Download ALL Transcripts (Single Text File)",
+                    data=compiled_text,
+                    file_name=f"{handle.replace('@','')}_all_transcripts.txt",
+                    mime="text/plain",
+                    use_container_width=True,
+                )
+            with col2:
+                st.info("💡 Tip: Click inside the box below, press Ctrl+A then Ctrl+C to copy everything instantly.")
             
-            st.text_area("📋 Copy All Field (Select All -> Copy)", value=compiled_text, height=120)
+            st.text_area("📋 Unified Clipboard Backup (All Combined)", value=compiled_text, height=150)
 
-            st.markdown("<hr style='border:0.5px solid #E2E8F0; margin: 30px 0;'>", unsafe_html=True)
+            st.divider()
             
-            st.markdown(f"### 📂 Individual Item Profiles ({successful_transcripts_count} Extracted Successfully)")
+            # --- CHRONOLOGICAL NATIVE CARDS VIEW ---
+            st.subheader(f"📂 Individual Item Profiles ({successful_transcripts_count} Extracted Successfully)")
             
             for index, item in enumerate(extracted_data):
-                status_badge = f"<span class='badge-success'>✓ Success</span>" if item['status'] == 'Success' else f"<span class='badge-failed'>✗ {item['status']}</span>"
-                
-                st.markdown(f"""
-                    <div class='video-card'>
-                        <div class='video-title'>{item['title']}</div>
-                        <div style='margin-bottom: 12px;'>{status_badge} &nbsp;|&nbsp; <a href='{item['url']}' target='_blank' style='color:#2563EB; font-size:13px; font-weight:500; text-decoration:none;'>🔗 View Original Short</a></div>
-                    </div>
-                """, unsafe_html=True)
-                
-                if item['status'] == 'Success':
-                    st.text_area("Transcript Output", value=item['transcript'], height=110, key=f"individual_{index}", label_visibility="collapsed")
-                else:
-                    st.caption(f"Status notification: {item['transcript']}")
-                
-                st.markdown("<div style='margin-bottom:25px;'></div>", unsafe_html=True)
+                # Using Native Containers as modern cards
+                with st.container(border=True):
+                    col_title, col_status = st.columns([3, 1])
+                    with col_title:
+                        st.markdown(f"**{item['title']}**")
+                        st.caption(f"[🔗 Open Original Video]({item['url']})")
+                    with col_status:
+                        if item['status'] == 'Success':
+                            st.success("✓ Success")
+                        else:
+                            st.error(f"✗ {item['status']}")
+                    
+                    if item['status'] == 'Success':
+                        st.text_area("Transcript Output", value=item['transcript'], height=110, key=f"individual_{index}", label_visibility="collapsed")
+                    else:
+                        st.warning(item['transcript'])
 else:
     st.info("💡 Pro Tip: Enter a channel handle on the left control panel (e.g., `@MrBeast`) and click 'Extract Transcripts' to populate this canvas.")
