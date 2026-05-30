@@ -12,45 +12,46 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom Elegant CSS for a pristine interface
-st.markdown("""
-    <style>
-    .main .block-container { padding-top: 2rem; padding-bottom: 2rem; }
-    h1 { font-weight: 800; color: #1E293B; letter-spacing: -0.5px; }
-    .video-card {
-        background-color: #FFFFFF;
-        border: 1px solid #E2E8F0;
-        border-radius: 12px;
-        padding: 20px;
-        margin-bottom: 20px;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-    }
-    .video-title {
-        font-size: 16px;
-        font-weight: 600;
-        color: #0F172A;
-        margin-bottom: 8px;
-    }
-    .badge-success {
-        background-color: #DCFCE7;
-        color: #14532D;
-        padding: 3px 10px;
-        border-radius: 20px;
-        font-size: 12px;
-        font-weight: 600;
-        display: inline-block;
-    }
-    .badge-failed {
-        background-color: #FEE2E2;
-        color: #7F1D1D;
-        padding: 3px 10px;
-        border-radius: 20px;
-        font-size: 12px;
-        font-weight: 600;
-        display: inline-block;
-    }
-    </style>
-""", unsafe_html=True)
+# Cleaned UI styling wrapper to avoid python version parsing syntax conflicts
+app_css = """
+<style>
+.main .block-container { padding-top: 2rem; padding-bottom: 2rem; }
+h1 { font-weight: 800; color: #1E293B; letter-spacing: -0.5px; }
+.video-card {
+    background-color: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+.video-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #0F172A;
+    margin-bottom: 8px;
+}
+.badge-success {
+    background-color: #DCFCE7;
+    color: #14532D;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    display: inline-block;
+}
+.badge-failed {
+    background-color: #FEE2E2;
+    color: #7F1D1D;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    display: inline-block;
+}
+</style>
+"""
+st.markdown(app_css, unsafe_html=True)
 
 
 # --- DATA EXTRACTION BACKEND ---
@@ -145,7 +146,7 @@ if submit_btn:
                 use_container_width=True,
             )
             
-            st.text_area("📋 Copy All Field (Select All -> Copy)", value=compiled_text, height=120, help="Click anywhere inside, press Ctrl+A then Ctrl+C to copy all instantly.")
+            st.text_area("📋 Copy All Field (Select All -> Copy)", value=compiled_text, height=120)
 
             st.markdown("<hr style='border:0.5px solid #E2E8F0; margin: 30px 0;'>", unsafe_html=True)
             
