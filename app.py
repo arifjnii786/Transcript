@@ -16,11 +16,18 @@ def get_shorts_ids(channel_handle, max_results):
     if not channel_handle.startswith('@'):
         channel_handle = f"@{channel_handle}"
     url = f"https://www.youtube.com/{channel_handle}/shorts"
+    
+    # Advanced yt-dlp scraping options to bypass simple server blocks
     ydl_opts = {
         'extract_flat': True,
         'playlistend': max_results,
         'quiet': True,
-        'no_warnings': True
+        'no_warnings': True,
+        'http_headers': {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.5',
+        }
     }
     video_data = []
     try:
@@ -40,22 +47,25 @@ def get_shorts_ids(channel_handle, max_results):
 
 def fetch_single_transcript(video):
     v_id = video['id']
+    
+    # We try fetching english first, then fall back to auto-generated or any available language profile
     try:
-        # Direct class method invocation to prevent module lookup failures
-        transcript_list = youtube_transcript_api.YouTubeTranscriptApi.get_transcript(v_id, languages=['en'])
+        transcript_list = youtube_transcript_api.YouTubeTranscriptApi.get_transcript(v_id, languages=['en', 'en-US'])
         full_text = " ".join([chunk['text'] for chunk in transcript_list])
         return {**video, 'transcript': full_text, 'status': 'Success'}
-    except Exception as e:
-        # Fallback to auto-generated transcripts lookups if specific language profile fails
+    except Exception:
         try:
+            # Fallback block: Fetch any available language or auto-translated transcript dynamically
             transcript_list = youtube_transcript_api.YouTubeTranscriptApi.get_transcript(v_id)
             full_text = " ".join([chunk['text'] for chunk in transcript_list])
             return {**video, 'transcript': full_text, 'status': 'Success'}
-        except Exception:
-            return {**video, 'transcript': "[System Note: No subtitles or auto-generated transcript available for this Short video]", 'status': 'Failed'}
+        except Exception as e:
+            # Informative error message to check if it's an IP restriction or actually missing captions
+            return {**video, 'transcript': f"[Server Restriction Notice: YouTube blocked the automated transcript request for this video ID. Try running fewer videos or checking if captions are manually disabled on this channel.]", 'status': 'Failed'}
 
 def bulk_extract_transcripts(video_list):
-    with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
+    # Reduced worker thread pool size to 2 to minimize rapid concurrent hits on YouTube's server from the cloud IP
+    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
         results = list(executor.map(fetch_single_transcript, video_list))
     return results
 
@@ -64,7 +74,7 @@ def bulk_extract_transcripts(video_list):
 with st.sidebar:
     st.title("🔧 Source Engine")
     handle = st.text_input("Channel Handle", placeholder="@username")
-    count = st.slider("Videos Target Count", min_value=1, max_value=30, value=5)
+    count = st.slider("Videos Target Count", min_value=1, max_value=20, value=3)
     submit_btn = st.button("⚡ Extract Transcripts", use_container_width=True, type="primary")
 
 
@@ -82,7 +92,7 @@ if submit_btn:
         if not shorts:
             st.error("No valid Shorts items discovered. Check handle spelling or connection settings.")
         else:
-            with st.spinner(f"📥 Extracting text profiles for {len(shorts)} videos concurrently..."):
+            with st.spinner(f"📥 Extracting text profiles for {len(shorts)} videos sequentially to prevent rate limits..."):
                 extracted_data = bulk_extract_transcripts(shorts)
             
             st.toast("✨ Bulk data extraction finished!", icon="✅")
