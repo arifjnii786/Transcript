@@ -1,4 +1,3 @@
-cat << 'EOF' > app.py
 import streamlit as st
 import yt_dlp
 from youtube_transcript_api import YouTubeTranscriptApi
@@ -16,11 +15,8 @@ st.set_page_config(
 # Custom Elegant CSS for a pristine interface
 st.markdown("""
     <style>
-    /* Global Styles */
     .main .block-container { padding-top: 2rem; padding-bottom: 2rem; }
     h1 { font-weight: 800; color: #1E293B; letter-spacing: -0.5px; }
-    
-    /* Card design for videos */
     .video-card {
         background-color: #FFFFFF;
         border: 1px solid #E2E8F0;
@@ -130,7 +126,6 @@ if submit_btn:
             
             st.toast("✨ Bulk data extraction finished!", icon="✅")
             
-            # --- AGGREGATION ENGINE (ONE CLICK UTILITY) ---
             compiled_text = ""
             successful_transcripts_count = 0
             
@@ -140,40 +135,20 @@ if submit_btn:
                     compiled_text += f"TITLE: {item['title']}\nURL: {item['url']}\nTRANSCRIPT:\n{item['transcript']}\n\n"
                     compiled_text += "="*80 + "\n\n"
             
-            # --- ACTION PANEL BAR ---
             st.markdown("### ⚡ Bulk Operations Action Bar")
-            col_left, col_right = st.columns([1, 1])
             
-            with col_left:
-                st.download_button(
-                    label="📥 Download ALL Transcripts (Single Text File)",
-                    data=compiled_text,
-                    file_name=f"{handle.replace('@','')}_all_transcripts.txt",
-                    mime="text/plain",
-                    use_container_width=True,
-                )
+            st.download_button(
+                label="📥 Download ALL Transcripts (Single Text File)",
+                data=compiled_text,
+                file_name=f"{handle.replace('@','')}_all_transcripts.txt",
+                mime="text/plain",
+                use_container_width=True,
+            )
             
-            with col_right:
-                # Direct One-Click Copy Clipboard system injecting custom modern script
-                st.markdown(f"""
-                    <script>
-                    function copyToClipboard() {{
-                        const textToCopy = `{base64.b64encode(compiled_text.encode('utf-8')).decode('utf-8')}`;
-                        const decodedText = anecdotesDecoded(textToCopy);
-                        navigator.clipboard.writeText(decodedText);
-                    }}
-                    function anecdotesDecoded(base64Str) {{
-                        return decodeURIComponent(escape(window.atob(base64Str)));
-                    }}
-                    </script>
-                """, unsafe_html=True)
-                
-                # Render clean copy code block natively for clean access
-                st.text_area("📋 Copy All Field (Select All -> Copy)", value=compiled_text, height=70, help="Click anywhere inside, press Ctrl+A then Ctrl+C to copy all instantly.")
+            st.text_area("📋 Copy All Field (Select All -> Copy)", value=compiled_text, height=120, help="Click anywhere inside, press Ctrl+A then Ctrl+C to copy all instantly.")
 
             st.markdown("<hr style='border:0.5px solid #E2E8F0; margin: 30px 0;'>", unsafe_html=True)
             
-            # --- CHRONOLOGICAL CARDS VIEW ---
             st.markdown(f"### 📂 Individual Item Profiles ({successful_transcripts_count} Extracted Successfully)")
             
             for index, item in enumerate(extracted_data):
@@ -186,7 +161,6 @@ if submit_btn:
                     </div>
                 """, unsafe_html=True)
                 
-                # If success, display expanding transcript log
                 if item['status'] == 'Success':
                     st.text_area("Transcript Output", value=item['transcript'], height=110, key=f"individual_{index}", label_visibility="collapsed")
                 else:
@@ -194,6 +168,4 @@ if submit_btn:
                 
                 st.markdown("<div style='margin-bottom:25px;'></div>", unsafe_html=True)
 else:
-    # Empty State Dashboard UI
-    st.info("💡 Pro Tip: Enter a channel handle on the left control panel (e.g., `@MrBeast` or `@TechBurner`) and click 'Extract Transcripts' to populate this canvas.")
-EOF
+    st.info("💡 Pro Tip: Enter a channel handle on the left control panel (e.g., `@MrBeast`) and click 'Extract Transcripts' to populate this canvas.")
